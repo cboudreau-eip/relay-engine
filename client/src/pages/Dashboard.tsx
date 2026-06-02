@@ -1,441 +1,382 @@
+import { trpc } from "@/lib/trpc";
+import { Pill, EngineCard, CardHeader, ListIcon, HealthRow, type Tone } from "@/components/engine-ui";
+import { timeAgo, formatDateTime, formatDuration, humanize } from "@/lib/format";
 import {
-  Cloud,
+  CloudDownload,
   Inbox,
   BookOpen,
   Sparkles,
-  CheckCircle2,
-  ArrowRight,
+  FileCheck2,
+  ChevronRight,
   FileText,
-  Calendar,
-  AlertCircle,
+  CheckCircle,
   XCircle,
-  Clock,
-} from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { fetchDashboardData } from '../lib/api';
+  PlayCircle,
+  AlertCircle,
+  Calendar,
+} from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  ResponsiveContainer,
+  XAxis,
+  Tooltip as RTooltip,
+  Cell,
+} from "recharts";
 
-// Placeholder data until API is wired up
-const PLACEHOLDER = {
-  pipelineFlow: {
-    scraper: { status: 'connected', label: 'S3 bucket' },
-    ingested: { count: 12, label: 'jobs · last 7 days' },
-    briefsPending: { count: 4, label: 'awaiting review', alert: true },
-    generating: { count: 1, label: 'article in progress', running: true },
-    articlesComplete: { count: 47, label: 'total · 9 this week', cmsSent: 31 },
+const REFETCH = 30000;
+
+function FlowCard({
+  color,
+  icon,
+  stage,
+  count,
+  sub,
+  pill,
+  connector = true,
+}: {
+  color: string;
+  icon: React.ReactNode;
+  stage: string;
+  count?: React.ReactNode;
+  sub: string;
+  pill?: React.ReactNode;
+  connector?: boolean;
+}) {
+  return (
+    <div
+      className="relative border-[2.5px] border-[#1a1a1a] rounded-xl px-4 py-[18px] text-center transition-transform hover:-translate-y-0.5"
+      style={{ background: color }}
+    >
+      <div className="w-9 h-9 flex items-center justify-center mx-auto mb-2">
+        {icon}
+      </div>
+      <div className="text-[11px] font-extrabold uppercase tracking-[0.06em] mb-1">
+        {stage}
+      </div>
+      {count !== undefined && (
+        <div className="text-[32px] font-black leading-none mb-1">{count}</div>
+      )}
+      <div className="text-[11px] text-[#555]">{sub}</div>
+      {pill && <div className="mt-1.5">{pill}</div>}
+      {connector && (
+        <div className="absolute -right-3 top-1/2 -translate-y-1/2 text-[#888] z-[2]">
+          <ChevronRight className="w-4 h-4" strokeWidth={2.5} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+const activityMeta: Record<
+  string,
+  { tone: Tone; icon: React.ReactNode; badge: string }
+> = {
+  article_complete: {
+    tone: "green",
+    icon: <FileText className="w-4 h-4" />,
+    badge: "generated",
   },
-  recentActivity: [
-    {
-      id: '1',
-      type: 'generated',
-      title: 'Medicare Part D 2025 Coverage Guide',
-      detail: '1,847 words · Compliance 91/100 · 3 min ago',
-    },
-    {
-      id: '2',
-      type: 'approved',
-      title: 'Best Medicare Supplement Plans 2025',
-      detail: 'Brief approved · Sent to queue · 18 min ago',
-    },
-    {
-      id: '3',
-      type: 'success',
-      title: 'Weekly Medicare Posts — completed',
-      detail: '"medicare advantage 2025" · 4m 12s · 1 hr ago',
-    },
-    {
-      id: '4',
-      type: 'failed',
-      title: 'Daily AI Keywords — failed',
-      detail: 'LLM timeout after 120s · 6 hrs ago',
-    },
-  ],
-  scheduledJobs: [
-    {
-      id: '1',
-      name: 'Weekly Medicare Posts',
-      schedule: 'Weekly · Keyword Queue · Last run: Today, 9 AM',
-      status: 'running',
-    },
-    {
-      id: '2',
-      name: 'Daily AI Keywords',
-      schedule: 'Daily · AI-Suggested · Next: Tomorrow, 6 AM',
-      status: 'failed',
-    },
-    {
-      id: '3',
-      name: 'Monthly Deep Dive',
-      schedule: 'Monthly · Keyword Queue · Last run: May 1',
-      status: 'paused',
-    },
-  ],
-  pipelineHealth: {
-    lastIngestion: '3 hours ago',
-    failedJobs24h: 0,
-    errorRate7d: '2.1%',
-    autoGenerate: true,
-    briefApprovalRate: '78%',
-    healthy: true,
+  brief_approved: {
+    tone: "blue",
+    icon: <CheckCircle className="w-4 h-4" />,
+    badge: "approved",
   },
-  schedulerHealth: {
-    activeJobs: '2 of 3',
-    currentlyRunning: 1,
-    failedRuns24h: 1,
-    nextScheduledRun: 'Today, 9:00 PM',
-    avgRunDuration: '4m 12s',
-    issues: 1,
+  brief_rejected: {
+    tone: "red",
+    icon: <XCircle className="w-4 h-4" />,
+    badge: "rejected",
   },
-  throughput: {
-    today: 2,
-    thisWeek: 9,
-    thisMonth: 31,
-    avgRunTime: '4m 12s',
-    total: 47,
+  scheduler_run: {
+    tone: "green",
+    icon: <PlayCircle className="w-4 h-4" />,
+    badge: "success",
+  },
+  scheduler_failed: {
+    tone: "red",
+    icon: <AlertCircle className="w-4 h-4" />,
+    badge: "failed",
   },
 };
 
 export default function Dashboard() {
-  // When API is ready, this will fetch real data
-  const { data } = useQuery({
-    queryKey: ['dashboard'],
-    queryFn: fetchDashboardData,
-    placeholderData: PLACEHOLDER,
+  const dashboard = trpc.engine.dashboard.useQuery(undefined, {
+    refetchInterval: REFETCH,
+  });
+  const job = trpc.engine.scheduledJob.useQuery(undefined, {
+    refetchInterval: REFETCH,
+  });
+  const activity = trpc.engine.activity.useQuery(undefined, {
+    refetchInterval: REFETCH,
   });
 
-  const d = data || PLACEHOLDER;
+  const flow = dashboard.data?.flow;
+  const throughput = dashboard.data?.throughput;
+  const health = dashboard.data?.health;
+  const j = job.data;
 
   return (
-    <div className="relative z-5 p-8 max-w-[1400px] mx-auto space-y-6">
-      {/* ── PIPELINE FLOW ─────────────────────────────────── */}
-      <div className="grid grid-cols-5 gap-3">
-        <FlowNode
-          icon={<Cloud size={22} />}
-          title="SCRAPER"
-          subtitle="S3 bucket"
-          badge={{ label: 'Connected', color: 'green' }}
+    <div className="space-y-7">
+      {/* Page heading */}
+      <div className="flex items-end justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-[26px] font-black uppercase tracking-tight leading-none">
+            Production Dashboard
+          </h1>
+          <p className="text-[13px] text-[#555] mt-1.5">
+            Live view of the RankPilot automated content pipeline · auto-refresh 30s
+          </p>
+        </div>
+        {dashboard.isLoading ? (
+          <Pill tone="amber">Loading…</Pill>
+        ) : dashboard.isError ? (
+          <Pill tone="red">Data error</Pill>
+        ) : (
+          <Pill tone="green">Live</Pill>
+        )}
+      </div>
+
+      {/* PIPELINE FLOW ROW */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+        <FlowCard
+          color="#c8f5e3"
+          icon={<CloudDownload className="w-[22px] h-[22px]" strokeWidth={2.2} />}
+          stage="Scraper"
+          sub="S3 bucket"
+          pill={
+            health?.scraperEnabled ? (
+              <Pill tone="green">Connected</Pill>
+            ) : (
+              <Pill tone="amber">Disabled</Pill>
+            )
+          }
         />
-        <FlowNode
-          icon={<Inbox size={22} />}
-          title="INGESTED"
-          value="12"
-          subtitle="jobs · last 7 days"
-          bgColor="bg-yellow"
+        <FlowCard
+          color="#fff9c4"
+          icon={<Inbox className="w-[22px] h-[22px]" strokeWidth={2.2} />}
+          stage="Ingested"
+          count={flow?.ingested ?? "—"}
+          sub="pipeline jobs"
         />
-        <FlowNode
-          icon={<BookOpen size={22} />}
-          title="BRIEFS PENDING"
-          value="4"
-          subtitle="awaiting review"
-          badge={{ label: 'Needs attention', color: 'amber' }}
-          bgColor="bg-peach"
-          alert
+        <FlowCard
+          color="#ffe5d4"
+          icon={<BookOpen className="w-[22px] h-[22px]" strokeWidth={2.2} />}
+          stage="Briefs Pending"
+          count={flow?.briefsPending ?? "—"}
+          sub="awaiting review"
+          pill={
+            (flow?.briefsPending ?? 0) > 0 ? (
+              <Pill tone="amber">Needs attention</Pill>
+            ) : (
+              <Pill tone="green">Clear</Pill>
+            )
+          }
         />
-        <FlowNode
-          icon={<Sparkles size={22} />}
-          title="GENERATING"
-          value="1"
-          subtitle="article in progress"
-          badge={{ label: 'Running now', color: 'blue', pulse: true }}
-          bgColor="bg-lavender"
+        <FlowCard
+          color="#e8d4ff"
+          icon={<Sparkles className="w-[22px] h-[22px]" strokeWidth={2.2} />}
+          stage="Generating"
+          count={flow?.generating ?? "—"}
+          sub="in keyword queue"
+          pill={
+            j?.isRunning ? (
+              <Pill tone="blue">Running now</Pill>
+            ) : (
+              <Pill tone="green">Idle</Pill>
+            )
+          }
         />
-        <FlowNode
-          icon={<CheckCircle2 size={22} />}
-          title="ARTICLES COMPLETE"
-          value="47"
-          subtitle="total · 9 this week"
-          badge={{ label: '31 sent to CMS', color: 'green' }}
-          bgColor="bg-mint"
+        <FlowCard
+          color="#ffd6e0"
+          icon={<FileCheck2 className="w-[22px] h-[22px]" strokeWidth={2.2} />}
+          stage="Articles Complete"
+          count={flow?.articlesComplete ?? "—"}
+          sub={`total · ${throughput?.week ?? 0} this week`}
+          pill={<Pill tone="green">{flow?.sentToCms ?? 0} sent to CMS</Pill>}
+          connector={false}
         />
       </div>
 
-      {/* ── RECENT ACTIVITY + SCHEDULED JOBS ──────────────── */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* Recent Activity */}
-        <div className="card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-extrabold uppercase tracking-wide">
-              Recent Activity
-            </h2>
-            <a
-              href="#"
-              className="text-xs font-bold text-gray-400 hover:text-gray-700 flex items-center gap-1"
-            >
-              View all <ArrowRight size={12} />
-            </a>
-          </div>
-          <div className="space-y-3">
-            {d.recentActivity.map((item) => (
-              <ActivityRow key={item.id} {...item} />
-            ))}
-          </div>
-        </div>
-
-        {/* Scheduled Jobs */}
-        <div className="card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-extrabold uppercase tracking-wide">
-              Scheduled Jobs
-            </h2>
-            <a
-              href="#"
-              className="text-xs font-bold text-gray-400 hover:text-gray-700 flex items-center gap-1"
-            >
-              View all <ArrowRight size={12} />
-            </a>
-          </div>
-          <div className="space-y-3">
-            {d.scheduledJobs.map((job) => (
-              <JobRow key={job.id} {...job} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── HEALTH + THROUGHPUT ────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-6">
-        {/* Pipeline Health */}
-        <div className="card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-extrabold uppercase tracking-wide">
-              Pipeline Health
-            </h2>
-            <span className="badge text-status-green border-status-green bg-status-green-bg">
-              Healthy
-            </span>
-          </div>
-          <div className="space-y-3">
-            <HealthRow label="Last ingestion" value="3 hours ago" />
-            <HealthRow
-              label="Failed jobs (24h)"
-              value="0 failures"
-              valueColor="text-status-green"
-            />
-            <HealthRow label="Error rate (7d)" value="2.1%" />
-            <HealthRow
-              label="Auto-generate"
-              value="ON"
-              valueColor="text-status-green"
-            />
-            <HealthRow label="Brief approval rate" value="78%" />
-          </div>
-        </div>
-
-        {/* Scheduler Health */}
-        <div className="card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-extrabold uppercase tracking-wide">
-              Scheduler Health
-            </h2>
-            <span className="badge text-status-amber border-status-amber bg-status-amber-bg">
-              1 issue
-            </span>
-          </div>
-          <div className="space-y-3">
-            <HealthRow label="Active jobs" value="2 of 3" />
-            <HealthRow
-              label="Currently running"
-              value="1 job"
-              valueColor="text-status-blue"
-            />
-            <HealthRow
-              label="Failed runs (24h)"
-              value="1 failure"
-              valueColor="text-status-red"
-            />
-            <HealthRow label="Next scheduled run" value="Today, 9:00 PM" />
-            <HealthRow label="Avg run duration" value="4m 12s" />
-          </div>
-        </div>
-
-        {/* Throughput */}
-        <div className="card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-extrabold uppercase tracking-wide">
-              Throughput
-            </h2>
-            <span className="text-xs text-gray-400 font-medium">
-              Articles generated
-            </span>
-          </div>
-          <div className="space-y-3">
-            <HealthRow label="Today" value="2" />
-            <HealthRow label="This week" value="9" />
-            <HealthRow label="This month" value="31" />
-            <HealthRow label="Avg run time" value="4m 12s" />
-            <HealthRow label="Total (all time)" value="47" />
-          </div>
-        </div>
-      </div>
-
-      {/* ── SUMMARY STATS ─────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-6">
-        <div className="card p-6 text-center">
-          <div className="text-4xl font-black">47</div>
-          <div className="text-xs font-bold uppercase tracking-wider text-gray-500 mt-1">
-            Articles Generated
-          </div>
-        </div>
-        <div className="card p-6 text-center">
-          <div className="text-4xl font-black">31</div>
-          <div className="text-xs font-bold uppercase tracking-wider text-gray-500 mt-1">
-            Sent to CMS
-          </div>
-        </div>
-        <div className="card p-6 text-center">
-          <div className="text-4xl font-black">3</div>
-          <div className="text-xs font-bold uppercase tracking-wider text-gray-500 mt-1">
-            Scheduled Jobs
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Sub-components ──────────────────────────────────────────── */
-
-function FlowNode({
-  icon,
-  title,
-  value,
-  subtitle,
-  badge,
-  bgColor,
-  alert,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  value?: string;
-  subtitle?: string;
-  badge?: { label: string; color: string; pulse?: boolean };
-  bgColor?: string;
-  alert?: boolean;
-}) {
-  return (
-    <div
-      className={`card p-5 text-center relative ${bgColor || ''} ${
-        alert ? 'border-status-amber' : ''
-      }`}
-    >
-      <div className="flex justify-center mb-2 text-gray-700">{icon}</div>
-      <div className="text-[10px] font-extrabold uppercase tracking-wider text-gray-600 mb-1">
-        {title}
-      </div>
-      {value && <div className="text-3xl font-black">{value}</div>}
-      {subtitle && (
-        <div className="text-xs text-gray-500 mt-0.5">{subtitle}</div>
-      )}
-      {badge && (
-        <div className="mt-2">
-          <span
-            className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-              badge.color === 'green'
-                ? 'text-status-green border-status-green bg-status-green-bg'
-                : badge.color === 'amber'
-                ? 'text-status-amber border-status-amber bg-status-amber-bg'
-                : badge.color === 'blue'
-                ? 'text-status-blue border-status-blue bg-status-blue-bg'
-                : 'text-status-green border-status-green bg-status-green-bg'
-            }`}
-          >
-            {badge.pulse && (
-              <span className="w-1.5 h-1.5 rounded-full bg-current pulse-dot" />
+      {/* TWO COLUMN: ACTIVITY + SCHEDULED JOB */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <EngineCard>
+          <CardHeader title="Recent Activity" />
+          <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+            {activity.isLoading && (
+              <p className="text-[13px] text-[#888] py-4 text-center">Loading activity…</p>
             )}
-            {badge.label}
-          </span>
-        </div>
-      )}
+            {activity.data?.length === 0 && (
+              <p className="text-[13px] text-[#888] py-4 text-center">No recent activity.</p>
+            )}
+            {activity.data?.map((ev) => {
+              const meta = activityMeta[ev.type];
+              return (
+                <div
+                  key={ev.id}
+                  className="flex items-center gap-3 px-3.5 py-3 border-[1.5px] border-[#e8e8e8] rounded-lg hover:bg-[#f9f9f9] transition-colors"
+                >
+                  <ListIcon tone={meta.tone}>{meta.icon}</ListIcon>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-bold truncate">
+                      {ev.detail ?? ev.title}
+                    </div>
+                    <div className="text-[11px] text-[#888]">
+                      {ev.title} · {timeAgo(ev.timestamp)}
+                    </div>
+                  </div>
+                  <Pill tone={meta.tone}>{meta.badge}</Pill>
+                </div>
+              );
+            })}
+          </div>
+        </EngineCard>
+
+        <EngineCard>
+          <CardHeader
+            title="Scheduled Job"
+            right={
+              j?.status ? (
+                <Pill tone={j.status === "active" ? "green" : "amber"}>
+                  {humanize(j.status)}
+                </Pill>
+              ) : null
+            }
+          />
+          {job.isLoading && (
+            <p className="text-[13px] text-[#888] py-4 text-center">Loading…</p>
+          )}
+          {j && (
+            <>
+              <div className="flex items-center gap-3 px-3.5 py-3 border-[1.5px] border-[#e8e8e8] rounded-lg mb-4">
+                <ListIcon tone={j.isRunning ? "blue" : "green"}>
+                  <Calendar className="w-4 h-4" />
+                </ListIcon>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-bold truncate">{j.name}</div>
+                  <div className="text-[11px] text-[#888]">
+                    {humanize(j.frequency)} · {humanize(j.keywordSource)}
+                  </div>
+                </div>
+                <Pill tone={j.isRunning ? "blue" : "green"}>
+                  {j.isRunning ? "running" : "idle"}
+                </Pill>
+              </div>
+              <HealthRow label="Total generated" value={j.totalGenerated} />
+              <HealthRow label="Last run" value={timeAgo(j.lastRunAt)} />
+              <HealthRow label="Next run" value={formatDateTime(j.nextRunAt)} />
+              <HealthRow
+                label="Queue pending"
+                value={j.queuePending}
+                valueClass={j.queuePending > 0 ? "text-engine-amber" : ""}
+              />
+              <HealthRow label="Queue completed" value={j.queueCompleted} />
+              <HealthRow
+                label="Avg run duration"
+                value={formatDuration(j.avgDurationMs)}
+              />
+              <HealthRow
+                label="Failures (24h)"
+                value={`${j.failures24h} ${j.failures24h === 1 ? "failure" : "failures"}`}
+                valueClass={j.failures24h > 0 ? "text-engine-red" : "text-engine-green"}
+              />
+            </>
+          )}
+        </EngineCard>
+      </div>
+
+      {/* THREE COL: HEALTH + THROUGHPUT + CHART */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <EngineCard>
+          <CardHeader
+            title="Pipeline Health"
+            right={
+              <Pill tone={(health?.pendingBriefs ?? 0) > 50 ? "amber" : "green"}>
+                {(health?.pendingBriefs ?? 0) > 50 ? "Backlog" : "Healthy"}
+              </Pill>
+            }
+          />
+          <HealthRow
+            label="Scraper enabled"
+            value={health?.scraperEnabled ? "ON" : "OFF"}
+            valueClass={health?.scraperEnabled ? "text-engine-green" : "text-engine-red"}
+          />
+          <HealthRow
+            label="Auto-generate outline"
+            value={health?.autoGenerateOutline ? "ON" : "OFF"}
+            valueClass={health?.autoGenerateOutline ? "text-engine-green" : ""}
+          />
+          <HealthRow
+            label="Auto-generate article"
+            value={health?.autoGenerateArticle ? "ON" : "OFF"}
+            valueClass={health?.autoGenerateArticle ? "text-engine-green" : ""}
+          />
+          <HealthRow label="Pending briefs" value={health?.pendingBriefs ?? "—"} />
+          <HealthRow
+            label="Brief approval rate"
+            value={`${health?.approvalRate ?? 0}%`}
+          />
+        </EngineCard>
+
+        <EngineCard>
+          <CardHeader title="Throughput" right={<span className="text-[12px] font-semibold text-[#555]">Articles generated</span>} />
+          <HealthRow label="Today" value={throughput?.today ?? "—"} big />
+          <HealthRow label="This week" value={throughput?.week ?? "—"} big />
+          <HealthRow label="This month" value={throughput?.month ?? "—"} big />
+          <HealthRow label="Total (all time)" value={throughput?.total ?? "—"} big />
+        </EngineCard>
+
+        <EngineCard>
+          <CardHeader title="Last 14 Days" right={<span className="text-[12px] font-semibold text-[#555]">per day</span>} />
+          <div className="h-[200px] mt-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={throughput?.series ?? []} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
+                <XAxis
+                  dataKey="day"
+                  tick={{ fontSize: 9, fill: "#888" }}
+                  tickFormatter={(d: string) => d.slice(5)}
+                  interval={2}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <RTooltip
+                  cursor={{ fill: "rgba(0,0,0,0.04)" }}
+                  contentStyle={{
+                    border: "2px solid #1a1a1a",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 600,
+                  }}
+                  labelFormatter={(d) => `Date: ${d}`}
+                  formatter={(v) => [`${v} articles`, ""]}
+                />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {(throughput?.series ?? []).map((_, i) => (
+                    <Cell key={i} fill="#9b5de5" />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </EngineCard>
+      </div>
+
+      {/* STAT CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+        <StatCard num={flow?.articlesComplete ?? "—"} label="Articles Generated" />
+        <StatCard num={flow?.sentToCms ?? "—"} label="Sent to CMS" />
+        <StatCard num={flow?.briefsPending ?? "—"} label="Briefs Pending Review" />
+      </div>
     </div>
   );
 }
 
-function ActivityRow({
-  type,
-  title,
-  detail,
-}: {
-  type: string;
-  title: string;
-  detail: string;
-}) {
-  const icons: Record<string, React.ReactNode> = {
-    generated: <FileText size={16} className="text-status-green" />,
-    approved: <CheckCircle2 size={16} className="text-status-blue" />,
-    success: <Clock size={16} className="text-status-green" />,
-    failed: <XCircle size={16} className="text-status-red" />,
-  };
-
-  const badgeColors: Record<string, string> = {
-    generated: 'text-status-green border-status-green bg-status-green-bg',
-    approved: 'text-status-blue border-status-blue bg-status-blue-bg',
-    success: 'text-status-green border-status-green bg-status-green-bg',
-    failed: 'text-status-red border-status-red bg-status-red-bg',
-  };
-
+function StatCard({ num, label }: { num: React.ReactNode; label: string }) {
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
-      <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
-        {icons[type]}
+    <div className="bg-white border-[2.5px] border-[#1a1a1a] rounded-xl p-5 text-center">
+      <div className="text-[36px] font-black leading-none mb-1">{num}</div>
+      <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#555]">
+        {label}
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-bold truncate">{title}</div>
-        <div className="text-xs text-gray-400">{detail}</div>
-      </div>
-      <span
-        className={`text-[10px] font-bold px-2 py-0.5 rounded border ${badgeColors[type]}`}
-      >
-        {type}
-      </span>
-    </div>
-  );
-}
-
-function JobRow({
-  name,
-  schedule,
-  status,
-}: {
-  name: string;
-  schedule: string;
-  status: string;
-}) {
-  const statusColors: Record<string, string> = {
-    running: 'text-status-green border-status-green bg-status-green-bg',
-    failed: 'text-status-red border-status-red bg-status-red-bg',
-    paused: 'text-status-amber border-status-amber bg-status-amber-bg',
-  };
-
-  return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
-      <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
-        <Calendar size={16} className="text-gray-500" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-bold">{name}</div>
-        <div className="text-xs text-gray-400">{schedule}</div>
-      </div>
-      <span
-        className={`text-[10px] font-bold px-2 py-0.5 rounded border ${statusColors[status]}`}
-      >
-        {status}
-      </span>
-    </div>
-  );
-}
-
-function HealthRow({
-  label,
-  value,
-  valueColor,
-}: {
-  label: string;
-  value: string;
-  valueColor?: string;
-}) {
-  return (
-    <div className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
-      <span className="text-sm text-gray-500">{label}</span>
-      <span className={`text-sm font-bold ${valueColor || ''}`}>{value}</span>
     </div>
   );
 }
