@@ -37,3 +37,7 @@
 - [x] Run full vitest suite and confirm pass (8/8)
 - [x] Browser verification of both pages
 - [x] Save checkpoint and deliver URL
+
+## Deploy Fixes
+- [x] Fix ERR_MODULE_NOT_FOUND for @shared/const (esbuild alias plugin bundles @shared/* and @/*)
+- [x] Verify production bundle boots locally (node dist/index.js)
