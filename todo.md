@@ -41,3 +41,6 @@
 ## Deploy Fixes
 - [x] Fix ERR_MODULE_NOT_FOUND for @shared/const (esbuild alias plugin bundles @shared/* and @/*)
 - [x] Verify production bundle boots locally (node dist/index.js)
+
+## Branding
+- [x] Favicon: pale-yellow (#FFF9C4) circle with white lightning bolt (svg + ico + png 32/180/192), wired into index.html head
