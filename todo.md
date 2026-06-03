@@ -44,3 +44,4 @@
 
 ## Branding
 - [x] Favicon: pale-yellow (#FFF9C4) circle with white lightning bolt (svg + ico + png 32/180/192), wired into index.html head
+- [x] Change page background to lavender (#E8D4FF); aligned muted/border tokens

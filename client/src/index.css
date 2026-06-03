@@ -56,8 +56,8 @@
 
 :root {
   --radius: 0.75rem;
-  /* Engine theme: peachy light background, near-black ink text */
-  --background: #fdf0e9;
+  /* Engine theme: lavender light background, near-black ink text */
+  --background: #e8d4ff;
   --foreground: #1a1a1a;
   --card: #ffffff;
   --card-foreground: #1a1a1a;
@@ -67,14 +67,14 @@
   --primary-foreground: #ffffff;
   --secondary: #ffe5d4;
   --secondary-foreground: #1a1a1a;
-  --muted: #f5ece6;
-  --muted-foreground: #777777;
+  --muted: #efe6fb;
+  --muted-foreground: #6b6577;
   --accent: #c8f5e3;
   --accent-foreground: #1a1a1a;
   --destructive: #d63031;
   --destructive-foreground: #ffffff;
-  --border: #e8e1da;
-  --input: #e8e1da;
+  --border: #ddd0f0;
+  --input: #ddd0f0;
   --ring: #1a1a1a;
   --chart-1: #2e9e6e;
   --chart-2: #1565c0;
@@ -95,7 +95,7 @@
     min-height: 100vh;
     position: relative;
     overflow-x: hidden;
-    /* Subtle grid overlay on the peachy background */
+    /* Subtle grid overlay on the lavender background */
     background-color: var(--background);
     background-image:
       linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
