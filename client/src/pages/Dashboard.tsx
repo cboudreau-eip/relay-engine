@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { Pill, EngineCard, CardHeader, ListIcon, HealthRow, type Tone } from "@/components/engine-ui";
+import { Pill, RunningPill, EngineCard, CardHeader, ListIcon, HealthRow, type Tone } from "@/components/engine-ui";
 import { timeAgo, formatDateTime, formatDuration, humanize } from "@/lib/format";
 import {
   CloudDownload,
@@ -127,13 +127,16 @@ export default function Dashboard() {
             Live view of the RankPilot automated content pipeline · auto-refresh 30s
           </p>
         </div>
-        {dashboard.isLoading ? (
-          <Pill tone="amber">Loading…</Pill>
-        ) : dashboard.isError ? (
-          <Pill tone="red">Data error</Pill>
-        ) : (
-          <Pill tone="green">Live</Pill>
-        )}
+        <div className="flex items-center gap-2">
+          {j?.isRunning && <RunningPill />}
+          {dashboard.isLoading ? (
+            <Pill tone="amber">Loading…</Pill>
+          ) : dashboard.isError ? (
+            <Pill tone="red">Data error</Pill>
+          ) : (
+            <Pill tone="green">Live</Pill>
+          )}
+        </div>
       </div>
 
       {/* PIPELINE FLOW ROW */}

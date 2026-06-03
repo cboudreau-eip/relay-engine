@@ -47,3 +47,8 @@
 - [x] Change page background to lavender (#E8D4FF); aligned muted/border tokens
 - [x] Revert page background to peach (#FDF0E9)
 - [x] Recolor favicon circle to lavender (#E8D4FF) with white bolt; regenerated all sizes
+
+## Header running indicator
+- [x] Add pulsing blue "running" pill next to Live badge, shown only when scheduler isRunning
+- [x] Add pulse keyframes (dot scale + soft glow), respect prefers-reduced-motion
+- [x] Test asserts scheduledJob.isRunning is a boolean (drives the pill)

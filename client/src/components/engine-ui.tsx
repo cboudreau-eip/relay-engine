@@ -31,6 +31,20 @@ export function Pill({
   );
 }
 
+export function RunningPill({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "running-pill inline-flex items-center gap-1.5 text-[10.5px] font-bold px-2.5 py-[3px] rounded-md border-[1.5px] bg-engine-blue-bg text-engine-blue border-engine-blue",
+        className
+      )}
+    >
+      <span className="running-dot inline-block w-[7px] h-[7px] rounded-full bg-engine-blue" />
+      running
+    </span>
+  );
+}
+
 export function EngineCard({
   children,
   className,

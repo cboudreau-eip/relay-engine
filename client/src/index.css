@@ -164,4 +164,20 @@
   .shape-float {
     animation: shape-float 9s ease-in-out infinite;
   }
+
+  /* Running indicator: pulsing dot + soft glow */
+  @keyframes running-dot {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.6); opacity: 0.5; }
+  }
+  @keyframes running-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(21, 101, 192, 0.35); }
+    50% { box-shadow: 0 0 0 5px rgba(21, 101, 192, 0); }
+  }
+  .running-pill {
+    animation: running-glow 1.6s ease-in-out infinite;
+  }
+  .running-dot {
+    animation: running-dot 1.2s ease-in-out infinite;
+  }
 }

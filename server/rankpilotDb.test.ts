@@ -32,6 +32,8 @@ describe("rankpilotDb connectivity", () => {
     const job = await getScheduledJobSummary();
     expect(job).not.toBeNull();
     expect(typeof job?.name).toBe("string");
+    // The header "running" pill is driven by this flag — guard its presence/type.
+    expect(typeof job?.isRunning).toBe("boolean");
   }, 30000);
 
   it("returns pipeline health with a valid approval rate", async () => {
