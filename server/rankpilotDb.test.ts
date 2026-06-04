@@ -20,6 +20,10 @@ describe("rankpilotDb connectivity", () => {
     expect(flow.ingested).toBeGreaterThanOrEqual(0);
     expect(flow.briefsPending).toBeGreaterThanOrEqual(0);
     expect(flow.articlesComplete).toBeGreaterThanOrEqual(0);
+    // CMS pushes for the current Mon–Fri week (drives the "Pushed to CMS" tile).
+    expect(typeof flow.cmsThisWeek).toBe("number");
+    expect(flow.cmsThisWeek).toBeGreaterThanOrEqual(0);
+    expect(flow.cmsThisWeek).toBeLessThanOrEqual(flow.sentToCms);
   }, 30000);
 
   it("returns a 14-day throughput series", async () => {

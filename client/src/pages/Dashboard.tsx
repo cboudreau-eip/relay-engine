@@ -192,10 +192,10 @@ export default function Dashboard() {
         <FlowCard
           color="#ffd6e0"
           icon={<FileCheck2 className="w-[22px] h-[22px]" strokeWidth={2.2} />}
-          stage="Articles Complete"
-          count={flow?.articlesComplete ?? "—"}
-          sub={`total · ${throughput?.week ?? 0} this week`}
-          pill={<Pill tone="green">{flow?.sentToCms ?? 0} sent to CMS</Pill>}
+          stage="Pushed to CMS"
+          count={flow?.cmsThisWeek ?? "—"}
+          sub="this week · Mon–Fri"
+          pill={<Pill tone="green">{flow?.sentToCms ?? 0} total published</Pill>}
           connector={false}
         />
       </div>

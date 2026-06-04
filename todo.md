@@ -52,3 +52,8 @@
 - [x] Add pulsing blue "running" pill next to Live badge, shown only when scheduler isRunning
 - [x] Add pulse keyframes (dot scale + soft glow), respect prefers-reduced-motion
 - [x] Test asserts scheduledJob.isRunning is a boolean (drives the pill)
+
+## CMS weekly tile
+- [x] Change "Articles Complete" tile to "Pushed to CMS" showing published articles for the current Mon–Fri week (anchored on articles.updatedAt)
+- [x] Add cmsThisWeek to getPipelineFlowCounts; keep total published in the pill
+- [x] Test asserts cmsThisWeek is a number, >= 0, and <= total published
