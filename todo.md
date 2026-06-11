@@ -60,3 +60,15 @@
 
 ## Documentation
 - [x] Write CONTEXT.md — comprehensive LLM/developer context file covering pipeline architecture, schema, env vars, design system, and future roadmap
+
+## Vercel Deployment
+- [x] Create server/_core/app.ts — shared Express app factory (no static serving, no HTTP listen)
+- [x] Refactor server/_core/index.ts to use createApp() factory
+- [x] Create api/server.ts — Vercel serverless entry point (imports createApp, exports handler)
+- [x] Create vercel.json — build config, outputDirectory, function runtime, rewrites
+- [x] Add api/ to tsconfig.json include
+- [x] Verify TypeScript passes (pnpm check)
+- [x] Verify full build passes (pnpm build)
+- [x] Verify 8/8 tests still pass
+- [ ] Push checkpoint to GitHub so Vercel picks up vercel.json
+- [ ] User adds env vars to Vercel dashboard
