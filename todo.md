@@ -57,3 +57,6 @@
 - [x] Change "Articles Complete" tile to "Pushed to CMS" showing published articles for the current Mon–Fri week (anchored on articles.updatedAt)
 - [x] Add cmsThisWeek to getPipelineFlowCounts; keep total published in the pill
 - [x] Test asserts cmsThisWeek is a number, >= 0, and <= total published
+
+## Documentation
+- [x] Write CONTEXT.md — comprehensive LLM/developer context file covering pipeline architecture, schema, env vars, design system, and future roadmap
