@@ -31,6 +31,15 @@ function getPool(): mysql.Pool {
 export async function query<T = any>(sql: string, params: any[] = []): Promise<T[]> {
   const pool = getPool();
   const [rows] = await pool.query(sql, params);
+  // SELECT statements resolve to an array of row objects. Anything else — an
+  // OK/ResultSetHeader packet from a non-SELECT statement, or a malformed driver
+  // response — would silently cast to T[] and corrupt every downstream consumer.
+  // Fail loudly instead so the caller (and the tRPC error handler) can react.
+  if (!Array.isArray(rows)) {
+    throw new Error(
+      `RankPilot query did not return rows (got ${typeof rows}): ${sql.trim().slice(0, 120)}`
+    );
+  }
   return rows as T[];
 }
 
