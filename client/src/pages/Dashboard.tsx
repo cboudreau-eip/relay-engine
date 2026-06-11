@@ -24,7 +24,7 @@ import {
   Cell,
 } from "recharts";
 
-const REFETCH = 30000;
+const REFETCH = 120000;
 
 function FlowCard({
   color,

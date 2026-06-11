@@ -16,7 +16,7 @@ import {
   Lock,
 } from "lucide-react";
 
-const REFETCH = 30000;
+const REFETCH = 120000;
 
 type NodeColor = "purple" | "blue" | "amber" | "green";
 
