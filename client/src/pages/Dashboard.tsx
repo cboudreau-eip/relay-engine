@@ -363,23 +363,6 @@ export default function Dashboard() {
         </EngineCard>
       </div>
 
-      {/* STAT CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-        <StatCard num={flow?.articlesComplete ?? "—"} label="Articles Generated" />
-        <StatCard num={flow?.sentToCms ?? "—"} label="Sent to CMS" />
-        <StatCard num={flow?.briefsPending ?? "—"} label="Briefs Pending Review" />
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ num, label }: { num: React.ReactNode; label: string }) {
-  return (
-    <div className="bg-white border-[2.5px] border-[#1a1a1a] rounded-xl p-5 text-center">
-      <div className="text-[36px] font-black leading-none mb-1">{num}</div>
-      <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#555]">
-        {label}
-      </div>
     </div>
   );
 }
