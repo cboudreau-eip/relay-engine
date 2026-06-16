@@ -7,6 +7,9 @@ dist/
 build/
 *.dist
 
+# Generated serverless bundle (produced by esbuild.config.mjs during build)
+api/_bundle.js
+
 # Environment variables
 .env
 .env.local

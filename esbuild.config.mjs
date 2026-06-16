@@ -6,7 +6,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Resolve path aliases (@shared/*, @/*) to real files so they get bundled
- * into dist/index.js. Without this, esbuild's --packages=external would treat
+ * into the output. Without this, esbuild's --packages=external would treat
  * these bare specifiers as external npm packages and the production runtime
  * would fail with ERR_MODULE_NOT_FOUND.
  */
@@ -24,14 +24,28 @@ const aliasPlugin = {
   },
 };
 
-await build({
-  entryPoints: ["server/_core/index.ts"],
+const shared = {
   platform: "node",
   packages: "external",
   bundle: true,
   format: "esm",
-  outdir: "dist",
   plugins: [aliasPlugin],
+};
+
+// Standalone server bundle (used by `node dist/index.js` for non-Vercel hosts).
+await build({
+  ...shared,
+  entryPoints: ["server/_core/index.ts"],
+  outdir: "dist",
 });
 
-console.log("Server bundle built with alias resolution.");
+// Self-contained serverless bundle consumed by the Vercel function (api/server.js).
+// All local server/* and shared/* imports are inlined here so the function has
+// no cross-directory module resolution to do at runtime.
+await build({
+  ...shared,
+  entryPoints: ["server/_core/vercelHandler.ts"],
+  outfile: "api/_bundle.js",
+});
+
+console.log("Server bundles built (dist/index.js + api/_bundle.js).");
