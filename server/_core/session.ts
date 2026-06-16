@@ -1,4 +1,4 @@
-import { ONE_YEAR_MS } from "@shared/const";
+import { ONE_YEAR_MS } from "../../shared/const";
 import { SignJWT, jwtVerify } from "jose";
 import { ENV } from "./env";
 

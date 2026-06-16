@@ -27,8 +27,20 @@ function getPool(): mysql.Pool {
   return _pool;
 }
 
-/** Run a parameterized query and return typed rows. */
+/** True when a RankPilot DB connection string is configured. */
+export function isDbConfigured(): boolean {
+  return Boolean(ENV.rankpilotDatabaseUrl);
+}
+
+/**
+ * Run a parameterized query and return typed rows.
+ * When no database is configured, returns an empty result set so the dashboard
+ * renders cleanly (all tiles fall back to zero) instead of crashing.
+ */
 export async function query<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+  if (!isDbConfigured()) {
+    return [] as T[];
+  }
   const pool = getPool();
   const [rows] = await pool.query(sql, params);
   return rows as T[];
@@ -36,6 +48,9 @@ export async function query<T = any>(sql: string, params: any[] = []): Promise<T
 
 /** Lightweight connectivity check used by tests and health endpoints. */
 export async function ping(): Promise<boolean> {
+  if (!isDbConfigured()) {
+    return false;
+  }
   const rows = await query<{ ok: number }>("SELECT 1 AS ok");
   return rows.length > 0 && Number(rows[0].ok) === 1;
 }

@@ -1,4 +1,4 @@
-import { UNAUTHED_ERR_MSG } from '@shared/const';
+import { UNAUTHED_ERR_MSG } from '../../shared/const';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
