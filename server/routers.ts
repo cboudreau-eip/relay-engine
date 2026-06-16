@@ -1,5 +1,9 @@
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { createSessionToken } from "./_core/session";
+import { ENV } from "./_core/env";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import {
@@ -13,22 +17,33 @@ import {
 } from "./rankpilotDb";
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
+
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(({ ctx }) =>
+      ctx.authenticated ? { name: "Admin" } : null
+    ),
+
+    login: publicProcedure
+      .input(z.object({ password: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ENV.dashboardPassword || input.password !== ENV.dashboardPassword) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid password" });
+        }
+        const token = await createSessionToken();
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        return { success: true } as const;
+      }),
+
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
+      return { success: true } as const;
     }),
   }),
 
-  // RankPilot content engine monitoring — all public (internal tool, no auth).
   engine: router({
-    // Combined dashboard payload: flow counts + throughput + health.
     dashboard: publicProcedure.query(async () => {
       const [flow, throughput, health] = await Promise.all([
         getPipelineFlowCounts(),
