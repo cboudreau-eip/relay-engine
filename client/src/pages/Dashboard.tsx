@@ -123,9 +123,6 @@ export default function Dashboard() {
           <h1 className="text-[26px] font-black uppercase tracking-tight leading-none">
             Production Dashboard
           </h1>
-          <p className="text-[13px] text-[#555] mt-1.5">
-            Live view of the RankPilot automated content pipeline · auto-refresh 30s
-          </p>
         </div>
         <div className="flex items-center gap-2">
           {j?.isRunning && <RunningPill />}
