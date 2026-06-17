@@ -46,7 +46,7 @@ export default function EngineLayout({ children }: { children: React.ReactNode }
           <span className="w-[34px] h-[34px] bg-mint border-2 border-[#1a1a1a] rounded-lg flex items-center justify-center">
             <Zap className="w-[18px] h-[18px]" strokeWidth={2.5} />
           </span>
-          Relay Engine
+          Relay Engine ⚡ v2
         </div>
         <div className="flex items-center gap-1 flex-1">
           <NavLink
