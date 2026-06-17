@@ -15,6 +15,7 @@ import {
   getPipelineRunStatus,
   ping,
 } from "./rankpilotDb";
+import { getCmsPipelineCounts } from "./cmsPipeline";
 
 export const appRouter = router({
   system: systemRouter,
@@ -45,12 +46,13 @@ export const appRouter = router({
 
   engine: router({
     dashboard: publicProcedure.query(async () => {
-      const [flow, throughput, health] = await Promise.all([
+      const [flow, throughput, health, cmsPipeline] = await Promise.all([
         getPipelineFlowCounts(),
         getThroughputMetrics(),
         getPipelineHealth(),
+        getCmsPipelineCounts(),
       ]);
-      return { flow, throughput, health };
+      return { flow, throughput, health, cmsPipeline };
     }),
 
     scheduledJob: publicProcedure.query(() => getScheduledJobSummary()),

@@ -110,6 +110,7 @@ export default function Dashboard() {
   const flow = dashboard.data?.flow;
   const throughput = dashboard.data?.throughput;
   const health = dashboard.data?.health;
+  const cms = dashboard.data?.cmsPipeline;
   const j = job.data;
 
   return (
@@ -156,6 +157,58 @@ export default function Dashboard() {
           sub="awaiting ingest"
           connector={false}
         />
+      </div>
+
+      {/* CONTENT PIPELINE (CMS) */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[15px] font-extrabold uppercase tracking-tight">
+            Content Pipeline
+          </h2>
+          {cms?.connected ? (
+            <Pill tone="green">CMS · Live</Pill>
+          ) : (
+            <Pill tone="amber">CMS unreachable</Pill>
+          )}
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+          <FlowCard
+            color="#fff9c4"
+            icon={<Inbox className="w-[22px] h-[22px]" strokeWidth={2.2} />}
+            stage="Intake"
+            count={cms?.intake ?? "—"}
+            sub="ingested from S3"
+          />
+          <FlowCard
+            color="#ffe5d4"
+            icon={<FileText className="w-[22px] h-[22px]" strokeWidth={2.2} />}
+            stage="Review"
+            count={cms?.review ?? "—"}
+            sub="awaiting review"
+            pill={
+              (cms?.review ?? 0) > 0 ? (
+                <Pill tone="amber">Needs attention</Pill>
+              ) : (
+                <Pill tone="green">Clear</Pill>
+              )
+            }
+          />
+          <FlowCard
+            color="#e8d4ff"
+            icon={<CheckCircle className="w-[22px] h-[22px]" strokeWidth={2.2} />}
+            stage="Queue"
+            count={cms?.queue ?? "—"}
+            sub="approved · queued"
+          />
+          <FlowCard
+            color="#ffd6e0"
+            icon={<PlayCircle className="w-[22px] h-[22px]" strokeWidth={2.2} />}
+            stage="Output"
+            count={cms?.output ?? "—"}
+            sub="drafts produced"
+            connector={false}
+          />
+        </div>
       </div>
 
       {/* TWO COLUMN: ACTIVITY + SCHEDULED JOB */}

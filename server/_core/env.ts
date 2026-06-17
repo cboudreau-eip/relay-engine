@@ -6,5 +6,6 @@ export const ENV = {
   awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "",
   awsRegion: process.env.AWS_REGION ?? "us-east-2",
   s3BucketName: process.env.S3_BUCKET_NAME ?? "",
+  cmsBaseUrl: process.env.CMS_BASE_URL ?? "https://medicarefaq-next-nine.vercel.app",
   isProduction: process.env.NODE_ENV === "production",
 };

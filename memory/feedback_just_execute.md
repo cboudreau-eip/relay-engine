@@ -9,4 +9,4 @@ Stop asking the user for permission/confirmation before taking actions. Just get
 
 **Why:** User explicitly said asking permission repeatedly is slowing everything down.
 
-**How to apply:** Make edits, run commands, commit, and push autonomously. Only pause for genuinely destructive/irreversible actions or true forks where the user's intent is unknowable. Default to action. See [[feedback-git-workflow]].
+**How to apply:** Make edits, run commands, commit, and push autonomously across ALL of the user's repos (relay-engine, medicarefaq-next, etc.) — not just one. Do NOT end responses by asking "want me to go ahead?" or "should I build it?". Just build it, push it, and report what was done. Only pause for genuinely destructive/irreversible actions (e.g. deleting data, force-pushing over others' work) or true forks where intent is unknowable. Default hard to action. See [[feedback-git-workflow]].
