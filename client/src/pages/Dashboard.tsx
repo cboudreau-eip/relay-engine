@@ -359,13 +359,6 @@ export default function Dashboard() {
           </div>
         </EngineCard>
       </div>
-
-      {/* STAT CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-        <StatCard num={flow?.articlesComplete ?? "—"} label="Articles Generated" />
-        <StatCard num={flow?.sentToCms ?? "—"} label="Sent to CMS" />
-        <StatCard num={flow?.briefsPending ?? "—"} label="Briefs Pending Review" />
-      </div>
     </div>
   );
 }
