@@ -203,38 +203,30 @@ export async function getScheduledJobSummary() {
  * Pipeline health card
  * ────────────────────────────────────────────────────────────────────────── */
 export async function getPipelineHealth() {
-  const [settings] = await query<any>(
-    `SELECT bucketUrl, enabled, autoGenerateOutline, autoGenerateArticle, updatedAt
-     FROM pipeline_settings
-     ORDER BY id ASC
-     LIMIT 1`
-  );
+  const { pingS3 } = await import("./s3");
 
-  const [pending] = await query<{ cnt: number }>(
-    "SELECT COUNT(*) AS cnt FROM pipeline_briefs WHERE briefStatus = 'pending_review'"
-  );
-  const [approved] = await query<{ cnt: number }>(
-    "SELECT COUNT(*) AS cnt FROM pipeline_briefs WHERE briefStatus = 'approved'"
-  );
-  const [rejected] = await query<{ cnt: number }>(
-    "SELECT COUNT(*) AS cnt FROM pipeline_briefs WHERE briefStatus = 'rejected'"
-  );
+  const [scraperEnabled, pending, approved, rejected] = await Promise.all([
+    pingS3(),
+    query<{ cnt: number }>("SELECT COUNT(*) AS cnt FROM pipeline_briefs WHERE briefStatus = 'pending_review'"),
+    query<{ cnt: number }>("SELECT COUNT(*) AS cnt FROM pipeline_briefs WHERE briefStatus = 'approved'"),
+    query<{ cnt: number }>("SELECT COUNT(*) AS cnt FROM pipeline_briefs WHERE briefStatus = 'rejected'"),
+  ]);
 
-  const approvedN = Number(approved?.cnt ?? 0);
-  const rejectedN = Number(rejected?.cnt ?? 0);
+  const approvedN = Number(approved[0]?.cnt ?? 0);
+  const rejectedN = Number(rejected[0]?.cnt ?? 0);
   const decided = approvedN + rejectedN;
   const approvalRate = decided > 0 ? Math.round((approvedN / decided) * 100) : 0;
 
   return {
-    scraperEnabled: Boolean(settings?.enabled),
-    bucketUrl: settings?.bucketUrl ?? null,
-    autoGenerateOutline: Boolean(settings?.autoGenerateOutline),
-    autoGenerateArticle: Boolean(settings?.autoGenerateArticle),
-    pendingBriefs: Number(pending?.cnt ?? 0),
+    scraperEnabled,
+    bucketUrl: scraperEnabled ? `s3://${process.env.S3_BUCKET_NAME}` : null,
+    autoGenerateOutline: false,
+    autoGenerateArticle: false,
+    pendingBriefs: Number(pending[0]?.cnt ?? 0),
     approvedBriefs: approvedN,
     rejectedBriefs: rejectedN,
     approvalRate,
-    settingsUpdatedAt: settings?.updatedAt ? new Date(settings.updatedAt).getTime() : null,
+    settingsUpdatedAt: null,
   };
 }
 
