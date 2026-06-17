@@ -59,41 +59,20 @@ export async function ping(): Promise<boolean> {
  * Pipeline flow counts (Scraper → Briefs → Generating → Complete)
  * ────────────────────────────────────────────────────────────────────────── */
 export async function getPipelineFlowCounts() {
-  const [ingested] = await query<{ cnt: number }>(
-    "SELECT COUNT(*) AS cnt FROM pipeline_jobs"
-  );
-  const [briefsPending] = await query<{ cnt: number }>(
-    "SELECT COUNT(*) AS cnt FROM pipeline_briefs WHERE briefStatus = 'pending_review'"
-  );
-  const [generating] = await query<{ cnt: number }>(
-    "SELECT COUNT(*) AS cnt FROM keyword_queue WHERE queueStatus = 'pending'"
-  );
-  const [articlesComplete] = await query<{ cnt: number }>(
-    "SELECT COUNT(*) AS cnt FROM articles"
-  );
-  const [sentToCms] = await query<{ cnt: number }>(
-    "SELECT COUNT(*) AS cnt FROM articles WHERE articleStatus = 'published'"
-  );
+  const { getS3IntakeStats } = await import("./s3");
 
-  // Articles pushed to the CMS (published) during the CURRENT week, limited to
-  // the Monday→Friday (business-week) window. We anchor on `updatedAt`, which
-  // for published rows reflects when the article entered the published state.
-  //   weekMonday = Monday 00:00:00 of the current ISO week
-  //   weekFridayEnd = Friday 23:59:59 of the current ISO week
-  const [cmsThisWeek] = await query<{ cnt: number }>(
-    `SELECT COUNT(*) AS cnt FROM articles
-     WHERE articleStatus = 'published'
-       AND updatedAt >= DATE_ADD(CURDATE(), INTERVAL -(WEEKDAY(CURDATE())) DAY)
-       AND updatedAt <  DATE_ADD(CURDATE(), INTERVAL (5 - WEEKDAY(CURDATE())) DAY)`
-  );
+  // "Ingested" is now the real count of content ideas waiting in the S3 bucket's
+  // incoming/ folder — the one server-side, cross-device number for the pipeline.
+  const intake = await getS3IntakeStats();
 
   return {
-    ingested: Number(ingested?.cnt ?? 0),
-    briefsPending: Number(briefsPending?.cnt ?? 0),
-    generating: Number(generating?.cnt ?? 0),
-    articlesComplete: Number(articlesComplete?.cnt ?? 0),
-    sentToCms: Number(sentToCms?.cnt ?? 0),
-    cmsThisWeek: Number(cmsThisWeek?.cnt ?? 0),
+    ingested: intake.articles,
+    intakeFiles: intake.files,
+    briefsPending: 0,
+    generating: 0,
+    articlesComplete: 0,
+    sentToCms: 0,
+    cmsThisWeek: 0,
   };
 }
 

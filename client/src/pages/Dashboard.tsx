@@ -4,9 +4,6 @@ import { timeAgo, formatDateTime, formatDuration, humanize } from "@/lib/format"
 import {
   CloudDownload,
   Inbox,
-  BookOpen,
-  Sparkles,
-  FileCheck2,
   ChevronRight,
   FileText,
   CheckCircle,
@@ -137,12 +134,12 @@ export default function Dashboard() {
       </div>
 
       {/* PIPELINE FLOW ROW */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
         <FlowCard
           color="#c8f5e3"
           icon={<CloudDownload className="w-[22px] h-[22px]" strokeWidth={2.2} />}
           stage="Scraper"
-          sub="S3 bucket"
+          sub={`S3 bucket · ${flow?.intakeFiles ?? 0} file(s)`}
           pill={
             health?.scraperEnabled ? (
               <Pill tone="green">Connected</Pill>
@@ -154,45 +151,9 @@ export default function Dashboard() {
         <FlowCard
           color="#fff9c4"
           icon={<Inbox className="w-[22px] h-[22px]" strokeWidth={2.2} />}
-          stage="Ingested"
+          stage="Ideas in Bucket"
           count={flow?.ingested ?? "—"}
-          sub="pipeline jobs"
-        />
-        <FlowCard
-          color="#ffe5d4"
-          icon={<BookOpen className="w-[22px] h-[22px]" strokeWidth={2.2} />}
-          stage="Briefs Pending"
-          count={flow?.briefsPending ?? "—"}
-          sub="awaiting review"
-          pill={
-            (flow?.briefsPending ?? 0) > 0 ? (
-              <Pill tone="amber">Needs attention</Pill>
-            ) : (
-              <Pill tone="green">Clear</Pill>
-            )
-          }
-        />
-        <FlowCard
-          color="#e8d4ff"
-          icon={<Sparkles className="w-[22px] h-[22px]" strokeWidth={2.2} />}
-          stage="Generating"
-          count={flow?.generating ?? "—"}
-          sub="in keyword queue"
-          pill={
-            j?.isRunning ? (
-              <Pill tone="blue">Running now</Pill>
-            ) : (
-              <Pill tone="green">Idle</Pill>
-            )
-          }
-        />
-        <FlowCard
-          color="#ffd6e0"
-          icon={<FileCheck2 className="w-[22px] h-[22px]" strokeWidth={2.2} />}
-          stage="Pushed to CMS"
-          count={flow?.cmsThisWeek ?? "—"}
-          sub="this week · Mon–Fri"
-          pill={<Pill tone="green">{flow?.sentToCms ?? 0} total published</Pill>}
+          sub="awaiting ingest"
           connector={false}
         />
       </div>
