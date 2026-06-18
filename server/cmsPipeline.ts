@@ -6,6 +6,7 @@ export type CmsPipelineCounts = {
   queue: number;
   output: number;
   connected: boolean;
+  debug?: string;
 };
 
 const EMPTY: CmsPipelineCounts = {
@@ -35,7 +36,7 @@ export async function getCmsPipelineCounts(): Promise<CmsPipelineCounts> {
     });
     clearTimeout(timeout);
 
-    if (!resp.ok) return EMPTY;
+    if (!resp.ok) return { ...EMPTY, debug: `GET ${base} -> HTTP ${resp.status}` };
     const data = (await resp.json()) as Partial<CmsPipelineCounts>;
     return {
       intake: Number(data.intake ?? 0),
@@ -43,8 +44,9 @@ export async function getCmsPipelineCounts(): Promise<CmsPipelineCounts> {
       queue: Number(data.queue ?? 0),
       output: Number(data.output ?? 0),
       connected: true,
+      debug: `ok via ${base}`,
     };
-  } catch {
-    return EMPTY;
+  } catch (err: any) {
+    return { ...EMPTY, debug: `fetch ${base} threw: ${err?.name || ""} ${err?.message || String(err)}` };
   }
 }
