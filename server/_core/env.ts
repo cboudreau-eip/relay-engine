@@ -7,5 +7,6 @@ export const ENV = {
   awsRegion: process.env.AWS_REGION ?? "us-east-2",
   s3BucketName: process.env.S3_BUCKET_NAME ?? "",
   cmsBaseUrl: process.env.CMS_BASE_URL ?? "https://sandbox-qa.medicarefaq.com",
+  cmsDatabaseUrl: process.env.CMS_DATABASE_URL ?? "",
   isProduction: process.env.NODE_ENV === "production",
 };
