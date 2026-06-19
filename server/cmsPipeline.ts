@@ -60,6 +60,22 @@ export async function getCmsPipelineCounts(): Promise<CmsPipelineCounts> {
       connected: true,
     };
   } catch (err: any) {
-    return { ...EMPTY, debug: `db error: ${err?.message || String(err)}` };
+    // Diagnostic: when the table is missing, report which DB/host we reached and
+    // what tables it actually has, so we can tell if it's the wrong branch.
+    try {
+      const sql = neon(url);
+      const info = (await sql`
+        SELECT current_database() AS db,
+               (SELECT string_agg(table_name, ', ')
+                  FROM information_schema.tables
+                 WHERE table_schema = 'public') AS tables
+      `) as Array<{ db: string; tables: string }>;
+      return {
+        ...EMPTY,
+        debug: `db error: ${err?.message || String(err)} | connected_db=${info[0]?.db} | tables=[${info[0]?.tables || ""}]`,
+      };
+    } catch (err2: any) {
+      return { ...EMPTY, debug: `db error: ${err?.message || String(err)}` };
+    }
   }
 }
